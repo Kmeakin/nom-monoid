@@ -1,11 +1,23 @@
 use crate::monoid::Monoid;
 use nom::{error::ParseError, Err, IResult, Parser};
 
+fn by_ref<P1>(p1: &mut P1) -> ByRef<'_, P1> { ByRef { p1 } }
+
+struct ByRef<'a, P1> {
+    p1: &'a mut P1,
+}
+
+impl<P1, I, O, E> Parser<I, O, E> for ByRef<'_, P1>
+where
+    P1: Parser<I, O, E>,
+{
+    fn parse(&mut self, input: I) -> IResult<I, O, E> { self.p1.parse(input) }
+}
+
 pub trait MonoidParser<I, O, E>: Sized
 where
     O: Monoid,
 {
-    fn by_ref(&mut self) -> ByRef<'_, Self> { ByRef { p1: self } }
 
     fn then<P2>(self, other: P2) -> Then<Self, P2> {
         Then {
@@ -26,19 +38,6 @@ where
     P: Parser<I, O, E>,
     O: Monoid,
 {
-}
-
-#[derive(Debug)]
-pub struct ByRef<'a, P1> {
-    p1: &'a mut P1,
-}
-
-impl<P1, I, O, E> Parser<I, O, E> for ByRef<'_, P1>
-where
-    P1: Parser<I, O, E>,
-    O: Monoid,
-{
-    fn parse(&mut self, input: I) -> IResult<I, O, E> { self.p1.parse(input) }
 }
 
 #[derive(Debug)]
@@ -93,7 +92,7 @@ where
     E: ParseError<I>,
 {
     fn parse(&mut self, input: I) -> IResult<I, O, E> {
-        nom::multi::many0(self.p1.by_ref())
+        nom::multi::many0(by_ref(&mut self.p1))
             .map(O::concat)
             .parse(input)
     }
@@ -112,7 +111,7 @@ where
     E: ParseError<I>,
 {
     fn parse(&mut self, input: I) -> IResult<I, O, E> {
-        nom::multi::many1(self.p1.by_ref())
+        nom::multi::many1(by_ref(&mut self.p1))
             .map(O::concat)
             .parse(input)
     }
