@@ -1,5 +1,6 @@
 use crate::monoid::Monoid;
-use nom::{error::ParseError, Err, IResult, Parser};
+use nom::{error::ParseError, IResult, Parser};
+use std::marker::PhantomData;
 
 fn by_ref<P1>(p1: &mut P1) -> ByRef<'_, P1> { ByRef { p1 } }
 
@@ -14,22 +15,31 @@ where
     fn parse(&mut self, input: I) -> IResult<I, O, E> { self.p1.parse(input) }
 }
 
+/// Provides helper methods on parsers that produce [`Monoid`]s
 pub trait MonoidParser<I, O, E>: Sized
 where
     O: Monoid,
 {
-
-    fn then<P2>(self, other: P2) -> Then<Self, P2> {
-        Then {
+    /// Parse with `self`, then flatten the result with
+    /// [`concat`](`Monoid::concat`)
+    fn flatten<T>(self) -> Flatten<Self, T> {
+        Flatten {
             p1: self,
-            p2: other,
+            phantom: PhantomData,
         }
     }
 
-    fn maybe(self) -> Maybe<Self> { Maybe { p1: self } }
+    /// Parse with `self`, then with `p2`, then
+    /// [`combine`](`Monoid::combine`) their results
+    fn then<P2>(self, p2: P2) -> Then<Self, P2> { Then { p1: self, p2 } }
 
+    /// The same as [`nom::combinator::opt`], but flattens the result
+    fn opt(self) -> Opt<Self> { Opt { p1: self } }
+
+    /// The same as [`nom::multi::many0`], but flattens the result
     fn many0(self) -> Many0<Self> { Many0 { p1: self } }
 
+    /// The same as [`nom::multi::many1`], but flattens the result
     fn many1(self) -> Many1<Self> { Many1 { p1: self } }
 }
 
@@ -60,22 +70,39 @@ where
 }
 
 #[derive(Debug)]
-pub struct Maybe<P1> {
+pub struct Flatten<P1, T> {
+    p1: P1,
+    phantom: PhantomData<T>,
+}
+
+impl<P1, I, T, O, E> Parser<I, O, E> for Flatten<P1, T>
+where
+    P1: Parser<I, T, E>,
+    T: IntoIterator<Item = O>,
+    O: Monoid,
+    E: ParseError<I>,
+{
+    fn parse(&mut self, input: I) -> IResult<I, O, E> {
+        by_ref(&mut self.p1).map(O::concat).parse(input)
+    }
+}
+
+#[derive(Debug)]
+pub struct Opt<P1> {
     p1: P1,
 }
 
-impl<P1, I, O, E> Parser<I, O, E> for Maybe<P1>
+impl<P1, I, O, E> Parser<I, O, E> for Opt<P1>
 where
     P1: Parser<I, O, E>,
     I: Clone,
     O: Monoid,
+    E: ParseError<I>,
 {
     fn parse(&mut self, input: I) -> IResult<I, O, E> {
-        match self.p1.parse(input.clone()) {
-            Ok(x) => Ok(x),
-            Err(Err::Error(_)) => Ok((input, O::unit())),
-            Err(e) => Err(e),
-        }
+        nom::combinator::opt(by_ref(&mut self.p1))
+            .flatten()
+            .parse(input)
     }
 }
 
@@ -93,7 +120,7 @@ where
 {
     fn parse(&mut self, input: I) -> IResult<I, O, E> {
         nom::multi::many0(by_ref(&mut self.p1))
-            .map(O::concat)
+            .flatten()
             .parse(input)
     }
 }
@@ -112,7 +139,7 @@ where
 {
     fn parse(&mut self, input: I) -> IResult<I, O, E> {
         nom::multi::many1(by_ref(&mut self.p1))
-            .map(O::concat)
+            .flatten()
             .parse(input)
     }
 }
