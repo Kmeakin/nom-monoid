@@ -4,88 +4,88 @@ use std::{
 };
 
 pub trait Monoid {
-    fn mempty() -> Self;
-    fn mappend(self, other: Self) -> Self;
+    fn unit() -> Self;
 
-    fn mconcat<I>(iter: I) -> Self
+    fn combine(self, other: Self) -> Self;
+    fn concat<I>(iter: I) -> Self
     where
         I: IntoIterator<Item = Self>,
         Self: Sized,
     {
-        iter.into_iter().fold(Self::mempty(), Self::mappend)
+        iter.into_iter().fold(Self::unit(), Self::combine)
     }
 }
 
 impl Monoid for String {
-    fn mempty() -> Self { Self::default() }
-    fn mappend(mut self, other: Self) -> Self {
+    fn unit() -> Self { Self::default() }
+    fn combine(mut self, other: Self) -> Self {
         self.push_str(&other);
         self
     }
 }
 
 impl<T: Monoid> Monoid for Option<T> {
-    fn mempty() -> Self { Self::default() }
-    fn mappend(self, other: Self) -> Self {
+    fn unit() -> Self { Self::default() }
+    fn combine(self, other: Self) -> Self {
         match (self, other) {
             (None, None) => None,
             (None, Some(x)) | (Some(x), None) => Some(x),
-            (Some(x), Some(y)) => Some(x.mappend(y)),
+            (Some(x), Some(y)) => Some(x.combine(y)),
         }
     }
 }
 
 impl<T> Monoid for Vec<T> {
-    fn mempty() -> Self { Self::default() }
-    fn mappend(mut self, other: Self) -> Self {
+    fn unit() -> Self { Self::default() }
+    fn combine(mut self, other: Self) -> Self {
         self.extend(other);
         self
     }
 }
 
 impl<T> Monoid for VecDeque<T> {
-    fn mempty() -> Self { Self::default() }
-    fn mappend(mut self, other: Self) -> Self {
+    fn unit() -> Self { Self::default() }
+    fn combine(mut self, other: Self) -> Self {
         self.extend(other);
         self
     }
 }
 
 impl<T> Monoid for LinkedList<T> {
-    fn mempty() -> Self { Self::default() }
-    fn mappend(mut self, other: Self) -> Self {
+    fn unit() -> Self { Self::default() }
+    fn combine(mut self, other: Self) -> Self {
         self.extend(other);
         self
     }
 }
 
 impl<T: Eq + Hash, S: BuildHasher + Default> Monoid for HashSet<T, S> {
-    fn mempty() -> Self { Self::default() }
-    fn mappend(mut self, other: Self) -> Self {
+    fn unit() -> Self { Self::default() }
+    fn combine(mut self, other: Self) -> Self {
         self.extend(other);
         self
     }
 }
 
 impl<T: Ord> Monoid for BTreeSet<T> {
-    fn mempty() -> Self { Self::default() }
-    fn mappend(mut self, other: Self) -> Self {
+    fn unit() -> Self { Self::default() }
+    fn combine(mut self, other: Self) -> Self {
         self.extend(other);
         self
     }
 }
 
 impl<K: Eq + Hash, V, S: BuildHasher + Default> Monoid for HashMap<K, V, S> {
-    fn mempty() -> Self { Self::default() }
-    fn mappend(mut self, other: Self) -> Self {
+    fn unit() -> Self { Self::default() }
+    fn combine(mut self, other: Self) -> Self {
         self.extend(other);
         self
     }
 }
 
 impl<K: Ord, V> Monoid for BTreeMap<K, V> {
-    fn mempty() -> Self { Self::default() }
-    fn mappend(mut self, other: Self) -> Self {
+    fn unit() -> Self { Self::default() }
+    fn combine(mut self, other: Self) -> Self {
         self.extend(other);
         self
     }

@@ -56,7 +56,7 @@ where
     fn parse(&mut self, input: I) -> IResult<I, O, E> {
         let (input, output1) = self.p1.parse(input)?;
         let (input, output2) = self.p2.parse(input)?;
-        Ok((input, output1.mappend(output2)))
+        Ok((input, output1.combine(output2)))
     }
 }
 
@@ -74,7 +74,7 @@ where
     fn parse(&mut self, input: I) -> IResult<I, O, E> {
         match self.p1.parse(input.clone()) {
             Ok(x) => Ok(x),
-            Err(Err::Error(_)) => Ok((input, O::mempty())),
+            Err(Err::Error(_)) => Ok((input, O::unit())),
             Err(e) => Err(e),
         }
     }
@@ -94,7 +94,7 @@ where
 {
     fn parse(&mut self, input: I) -> IResult<I, O, E> {
         nom::multi::many0(self.p1.by_ref())
-            .map(O::mconcat)
+            .map(O::concat)
             .parse(input)
     }
 }
@@ -113,7 +113,7 @@ where
 {
     fn parse(&mut self, input: I) -> IResult<I, O, E> {
         nom::multi::many1(self.p1.by_ref())
-            .map(O::mconcat)
+            .map(O::concat)
             .parse(input)
     }
 }
