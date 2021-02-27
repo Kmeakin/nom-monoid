@@ -8,5 +8,5 @@
     unused_qualifications
 )]
 
-mod monoid;
-mod monoid_parser;
+pub mod monoid;
+pub mod monoid_parser;
