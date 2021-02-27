@@ -1,6 +1,6 @@
 use std::{
     collections::{BTreeMap, BTreeSet, HashMap, HashSet, LinkedList, VecDeque},
-    hash::Hash,
+    hash::{BuildHasher, Hash},
 };
 
 pub trait Monoid {
@@ -59,7 +59,7 @@ impl<T> Monoid for LinkedList<T> {
     }
 }
 
-impl<T: Eq + Hash> Monoid for HashSet<T> {
+impl<T: Eq + Hash, S: BuildHasher + Default> Monoid for HashSet<T, S> {
     fn mempty() -> Self { Self::default() }
     fn mappend(mut self, other: Self) -> Self {
         self.extend(other);
@@ -75,7 +75,7 @@ impl<T: Ord> Monoid for BTreeSet<T> {
     }
 }
 
-impl<K: Eq + Hash, V> Monoid for HashMap<K, V> {
+impl<K: Eq + Hash, V, S: BuildHasher + Default> Monoid for HashMap<K, V, S> {
     fn mempty() -> Self { Self::default() }
     fn mappend(mut self, other: Self) -> Self {
         self.extend(other);

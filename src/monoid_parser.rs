@@ -28,6 +28,7 @@ where
 {
 }
 
+#[derive(Debug)]
 pub struct ByRef<'a, P1> {
     p1: &'a mut P1,
 }
@@ -40,6 +41,7 @@ where
     fn parse(&mut self, input: I) -> IResult<I, O, E> { self.p1.parse(input) }
 }
 
+#[derive(Debug)]
 pub struct Then<P1, P2> {
     p1: P1,
     p2: P2,
@@ -58,6 +60,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct Maybe<P1> {
     p1: P1,
 }
@@ -77,6 +80,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct Many0<P1> {
     p1: P1,
 }
@@ -95,6 +99,7 @@ where
     }
 }
 
+#[derive(Debug)]
 pub struct Many1<P1> {
     p1: P1,
 }
